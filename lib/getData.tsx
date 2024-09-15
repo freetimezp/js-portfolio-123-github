@@ -13,7 +13,7 @@ export async function getData() {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function fetchCommits(repoId: string, page: number): Promise<Commit[]> {
+export async function fetchCommits(repoId: string, page?: number, search?: string): Promise<Commit[]> {
     try {
         const responseRepo = await fetch(`https://api.github.com/repositories/${repoId}`);
         const repoDetails = await responseRepo.json();

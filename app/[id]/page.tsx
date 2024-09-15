@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card';
 
 import InfiniteScrollCommits from '@/components/infiniteScroll';
+import SearchCommits from '@/components/SearchCommits';
 
 
 export type pageProps = {
@@ -21,20 +22,25 @@ export type pageProps = {
 };
 
 const page = async (props: pageProps) => {
+    const search = typeof props?.searchParams?.search === "string" ? props?.searchParams?.search : undefined;
     const repoId: string | undefined = props?.params.id;
 
-    if (!repoId) {
-        console.error("Repo ID is undefined");
-        throw new Error('Repository not found');
+
+    let filteredCommits: Commit[] = [];
+
+    if (repoId) {
+        const commits = await fetchCommits(repoId, 1);
+
+        //filter commits
+        filteredCommits = search
+            ? commits.filter(
+                (commit: Commit) => commit.commit.message.toLocaleLowerCase().includes(search.toLocaleLowerCase())
+            )
+            : commits;
+    } else {
+        console.error("repo ID undefuned");
     }
 
-    let commits: Commit[] = [];
-
-    try {
-        commits = await fetchCommits(repoId, 1);
-    } catch (error) {
-        console.error("Error fetching commits", error);
-    }
 
     return (
         <div className='flex flex-col items-center'>
@@ -46,11 +52,18 @@ const page = async (props: pageProps) => {
                         </Button>
                     </Link>
                 </div>
+
+                <div className='w-full'>
+                    <SearchCommits
+                        search={search}
+                        repoId={repoId ? String(repoId) : undefined}
+                    />
+                </div>
             </div>
 
             <div className='mt-16 flex flex-col max-w-[80%]'>
-                {commits && commits?.length > 0 &&
-                    commits.map((commit: Commit, index: number) => (
+                {filteredCommits && filteredCommits?.length > 0 &&
+                    filteredCommits.map((commit: Commit, index: number) => (
                         <Card key={`${commit.sha}-${index}`} className='flex mb-4'>
                             <CardHeader>
                                 <CardTitle className='text-xl'>
@@ -67,7 +80,7 @@ const page = async (props: pageProps) => {
             <InfiniteScrollCommits
                 repoId={repoId ? String(repoId) : undefined}
                 initialPage={1}
-                initialCommits={commits}
+                initialCommits={filteredCommits}
             />
         </div>
     );
